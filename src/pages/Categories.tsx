@@ -1,22 +1,35 @@
 import React, { useState } from 'react';
 import { Plus, Edit, Trash2, Tag } from 'lucide-react';
 
+// Interface untuk tipe data kategori
+interface Category {
+  id: string;
+  name: string;
+  description: string;
+  color: string;
+  productCount: number;
+}
+
 const Categories = () => {
   const [showAddCategory, setShowAddCategory] = useState(false);
-  const [categoryForm, setCategoryForm] = useState({
+
+  // State form untuk tambah/edit kategori
+  const [categoryForm, setCategoryForm] = useState<Omit<Category, 'id'>>({
     name: '',
     description: '',
     color: '#3B82F6',
+    productCount: 0,
   });
 
-  // Mock categories
-  const mockCategories = [
+  // State daftar kategori
+  const [categories, setCategories] = useState<Category[]>([
     { id: '1', name: 'Food', description: 'Makanan dan hidangan utama', color: '#F59E0B', productCount: 15 },
     { id: '2', name: 'Beverages', description: 'Minuman panas dan dingin', color: '#3B82F6', productCount: 8 },
     { id: '3', name: 'Snacks', description: 'Camilan dan makanan ringan', color: '#10B981', productCount: 12 },
     { id: '4', name: 'Dessert', description: 'Makanan penutup dan kue', color: '#8B5CF6', productCount: 6 },
-  ];
+  ]);
 
+  // Warna pilihan untuk kategori
   const colorOptions = [
     { value: '#3B82F6', label: 'Biru' },
     { value: '#10B981', label: 'Hijau' },
@@ -28,15 +41,61 @@ const Categories = () => {
     { value: '#84CC16', label: 'Lime' },
   ];
 
+  // Menangani submit form (tambah atau edit)
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Category added:', categoryForm);
+
+    if (!categoryForm.name.trim()) return;
+
+    // Jika sedang edit, cari index dan update
+    if (editingId) {
+      const updatedCategories = categories.map((cat) =>
+        cat.id === editingId ? { ...cat, ...categoryForm } : cat
+      );
+      setCategories(updatedCategories);
+      alert('Kategori berhasil diupdate!');
+    } else {
+      // Tambah baru
+      const newCategory: Category = {
+        ...categoryForm,
+        id: Date.now().toString(),
+      };
+      setCategories([...categories, newCategory]);
+      alert('Kategori berhasil ditambahkan!');
+    }
+
+    // Reset form
+    setEditingId(null);
     setShowAddCategory(false);
-    setCategoryForm({ name: '', description: '', color: '#3B82F6' });
+    setCategoryForm({ name: '', description: '', color: '#3B82F6', productCount: 0 });
+  };
+
+  // ID untuk menyimpan kategori yang sedang diedit
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Hapus kategori berdasarkan ID
+  const handleDeleteCategory = (id: string) => {
+    const updatedCategories = categories.filter((cat) => cat.id !== id);
+    setCategories(updatedCategories);
+    alert('Kategori berhasil dihapus!');
+  };
+
+  // Isi form dengan data kategori untuk diedit
+  const handleEditCategory = (category: Category) => {
+    setCategoryForm({
+      name: category.name,
+      description: category.description,
+      color: category.color,
+      productCount: category.productCount,
+    });
+    setEditingId(category.id);
+    setShowAddCategory(true);
+    alert(`Sedang mengedit kategori: ${category.name}`);
   };
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Kategori Produk</h1>
         <button
@@ -48,26 +107,25 @@ const Categories = () => {
         </button>
       </div>
 
-      {/* Category Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      {/* Statistik Sederhana */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Kategori</p>
-              <p className="text-2xl font-bold text-blue-600 mt-2">{mockCategories.length}</p>
+              <p className="text-2xl font-bold text-blue-600 mt-2">{categories.length}</p>
             </div>
             <div className="p-3 rounded-full bg-blue-50 text-blue-600">
               <Tag className="w-6 h-6" />
             </div>
           </div>
         </div>
-        
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Produk</p>
               <p className="text-2xl font-bold text-green-600 mt-2">
-                {mockCategories.reduce((sum, cat) => sum + cat.productCount, 0)}
+                {categories.reduce((sum, cat) => sum + cat.productCount, 0)}
               </p>
             </div>
             <div className="p-3 rounded-full bg-green-50 text-green-600">
@@ -75,37 +133,11 @@ const Categories = () => {
             </div>
           </div>
         </div>
-
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Kategori Terpopuler</p>
-              <p className="text-lg font-bold text-purple-600 mt-2">Food</p>
-            </div>
-            <div className="p-3 rounded-full bg-purple-50 text-purple-600">
-              <Tag className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Rata-rata Produk</p>
-              <p className="text-2xl font-bold text-orange-600 mt-2">
-                {Math.round(mockCategories.reduce((sum, cat) => sum + cat.productCount, 0) / mockCategories.length)}
-              </p>
-            </div>
-            <div className="p-3 rounded-full bg-orange-50 text-orange-600">
-              <Tag className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* Categories Grid */}
+      {/* Grid Kategori */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {mockCategories.map((category) => (
+        {categories.map((category) => (
           <div key={category.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
             <div 
               className="h-20 flex items-center justify-center"
@@ -113,7 +145,6 @@ const Categories = () => {
             >
               <Tag className="w-8 h-8 text-white" />
             </div>
-            
             <div className="p-6">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-lg font-semibold text-gray-900">{category.name}</h3>
@@ -121,9 +152,7 @@ const Categories = () => {
                   {category.productCount} produk
                 </span>
               </div>
-              
               <p className="text-sm text-gray-600 mb-4">{category.description}</p>
-              
               <div className="flex items-center space-x-2">
                 <div 
                   className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
@@ -131,13 +160,18 @@ const Categories = () => {
                 ></div>
                 <span className="text-sm text-gray-500">Warna kategori</span>
               </div>
-
               <div className="flex justify-between mt-6 pt-4 border-t border-gray-200">
-                <button className="flex items-center space-x-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                <button
+                  onClick={() => handleEditCategory(category)}
+                  className="flex items-center space-x-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                >
                   <Edit className="w-4 h-4" />
                   <span className="text-sm">Edit</span>
                 </button>
-                <button className="flex items-center space-x-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                <button
+                  onClick={() => handleDeleteCategory(category.id)}
+                  className="flex items-center space-x-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
                   <Trash2 className="w-4 h-4" />
                   <span className="text-sm">Hapus</span>
                 </button>
@@ -147,14 +181,15 @@ const Categories = () => {
         ))}
       </div>
 
-      {/* Add Category Modal */}
+      {/* Modal Tambah/Edit Kategori */}
       {showAddCategory && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl w-full max-w-md">
             <div className="p-6 border-b border-gray-200">
-              <h3 className="text-xl font-semibold">Tambah Kategori Baru</h3>
+              <h3 className="text-xl font-semibold">
+                {editingId ? 'Edit' : 'Tambah'} Kategori Baru
+              </h3>
             </div>
-            
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -168,7 +203,6 @@ const Categories = () => {
                   className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Deskripsi
@@ -180,7 +214,6 @@ const Categories = () => {
                   className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Warna Kategori
@@ -206,11 +239,14 @@ const Categories = () => {
                   ))}
                 </div>
               </div>
-
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowAddCategory(false)}
+                  onClick={() => {
+                    setShowAddCategory(false);
+                    setEditingId(null);
+                    setCategoryForm({ name: '', description: '', color: '#3B82F6', productCount: 0 });
+                  }}
                   className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Batal
